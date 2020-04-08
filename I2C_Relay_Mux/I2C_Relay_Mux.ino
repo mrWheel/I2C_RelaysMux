@@ -2,7 +2,7 @@
 ***************************************************************************  
 **
 **    Program : I2C_Multiplexer.ino
-**    Date    : 05-04-2020
+**    Date    : 08-04-2020
 */
 #define _MAJOR_VERSION  1
 #define _MINOR_VERSION  7
@@ -17,9 +17,9 @@
 *     
 *     Set fuses:
 *     
-*     -U lfuse:w:0xe2:m -U hfuse:w:0xd1:m -U efuse:w:0xff:m
+*     -U lfuse:w:0xff:m -U hfuse:w:0xd6:m -U efuse:w:0xff:m
 *     
-*     Use the standard Arduino UNO bootloader
+*     //Use the standard Arduino UNO bootloader
 *     
 * Settings:
 *     Board:  Arduino/Genuino UNO
@@ -41,7 +41,7 @@
 *
 */
 
-// #define ARDUINO_UNO
+//#define DEBUG_ON
 
 // #include <avr/wdt.h>
 // #include <Arduino.h>
@@ -53,7 +53,7 @@
 #define _RELAY_ON             0
 #define _RELAY_OFF            255
 
-#ifdef ARDUINO_UNO
+#ifdef DEBUG_ON
   #define Dbegin(...)     ({ Serial.begin(__VA_ARGS__); })
   #define Dprint(...)     ({ Serial.print(__VA_ARGS__); })
   #define Dprintln(...)   ({ Serial.println(__VA_ARGS__); })
@@ -129,16 +129,41 @@ void DprintRegisters(const char *fromFunc)
 //==========================================================================
 void wait(uint16_t msecs)
 {
-  int wLoop = (int)((msecs / 100)+1);
-  //Dprint("wait["); Dprint(wLoop); Dprint("] ");
-  for (int i=0; i<=wLoop; i++) 
-  {
-    delay(1600);
-    //Dprint("."); Dflush();
-  }
-  //Dprintln("Continue ..");
+  sei();
+  delay(msecs);
+  cli();
   
 } // wait()
+
+
+//==========================================================================
+void oneLoop()
+{
+    for (int i=1; i<=registerStack.numberOfRelays; i++) 
+    {
+      Dprint("L");
+      if (registerStack.numberOfRelays == 8)
+            digitalWrite(p2r8[i],  LOW);
+      else  digitalWrite(p2r16[i], LOW);
+      //wdt_reset();
+      wait(750);
+    }
+    wait(1000);
+    Dprintln();
+    //wdt_reset();
+    for (int i=1; i<=registerStack.numberOfRelays; i++) 
+    {
+      Dprint("H");
+      if (registerStack.numberOfRelays == 8)
+            digitalWrite(p2r8[i],  HIGH);
+      else  digitalWrite(p2r16[i], HIGH);
+      wait(250);
+      //wdt_reset();
+    }
+    Dprintln();
+
+} // oneLoop()
+
 
 //==========================================================================
 void testRelays()
@@ -146,22 +171,7 @@ void testRelays()
   digitalWrite(0, LOW);
   Dprintln("\r\ntestRelays()");
   for (int x=0; x<10;x++) {
-    for (int i=1; i<=16; i++) {
-      Dprint("L");
-      digitalWrite(p2r16[i], LOW);
-      //wdt_reset();
-      wait(1000);
-    }
-    wait(1000);
-    Dprintln();
-    //wdt_reset();
-    for (int i=1; i<=16; i++) {
-      Dprint("H");
-      digitalWrite(p2r16[i], HIGH);
-      wait(250);
-      //wdt_reset();
-    }
-    Dprintln();
+    oneLoop();
   }
 
 } //  testRelays()
@@ -190,7 +200,7 @@ void reBoot()
 //==========================================================================
 void setup()
 {
-  MCUSR=0x00; //<<<-- keep this in!
+  //MCUSR=0x00; //<<<-- keep this in!
   //wdt_disable();
 
   Dbegin(115200);     // this is PD0 (RX) and PD1 (TX)

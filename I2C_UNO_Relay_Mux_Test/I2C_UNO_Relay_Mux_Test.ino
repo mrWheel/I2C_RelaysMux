@@ -1,9 +1,9 @@
 /*
 ***************************************************************************
 **
-**  Program     : I2C_Mux_Test
+**  Program     : I2C_UNO_Relay_Mux_Test
 */
-#define _FW_VERSION  "v0.4 (05-04-2020)"
+#define _FW_VERSION  "v0.6 (08-04-2020)"
 /*
 **  Description : Test FTM I2C Relay Multiplexer
 **
