@@ -1,7 +1,7 @@
 /*
 ***************************************************************************  
 **
-**  File    : I2C_MuxLib.cpp
+**  File    : I2C_RelaysMux.cpp
 **  Version : v0.6.3
 **
 **  Copyright (c) 2020 Willem Aandewiel
@@ -10,7 +10,7 @@
 ***************************************************************************      
 */
 
-#include "/Users/WillemA/Documents/ArduinoProjects/I2C_Relay_Mux/I2C_MuxLib/src/I2C_MuxLib.h"
+#include "/Users/WillemA/Documents/ArduinoProjects/I2C_Relay_Mux/I2C_MuxLib/src/I2C_RelaysMux.h"
 
 // Constructor
 I2CMUX::I2CMUX() { }
