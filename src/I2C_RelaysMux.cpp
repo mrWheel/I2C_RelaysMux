@@ -10,7 +10,7 @@
 ***************************************************************************      
 */
 
-#include "/Users/WillemA/Documents/ArduinoProjects/I2C_Relay_Mux/I2C_MuxLib/src/I2C_RelaysMux.h"
+#include "I2C_RelaysMux.h"
 
 // Constructor
 I2CMUX::I2CMUX() { }

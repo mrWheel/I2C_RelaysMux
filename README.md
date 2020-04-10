@@ -1,1 +1,1 @@
-# I2C_Relays_Mux
+# I2C_RelaysMux

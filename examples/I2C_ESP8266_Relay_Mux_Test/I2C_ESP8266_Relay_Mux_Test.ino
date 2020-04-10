@@ -27,7 +27,7 @@
 #define LOOP_INTERVAL        1000
 #define INACTIVE_TIME      120000
 
-#include "/Users/WillemA/Documents/ArduinoProjects/I2C_Relay_Mux/I2C_MuxLib/src/I2C_MuxLib.h"
+#include "/Users/WillemA/Documents/ArduinoProjects/I2C_RelaysMux/src/I2C_RelaysMux.h"
 //#include "../I2C_MuxLib/src/I2C_MuxLib.h"
 
 #include <TelnetStream.h>       // https://github.com/jandrassy/TelnetStream/commit/1294a9ee5cc9b1f7e51005091e351d60c8cddecf
