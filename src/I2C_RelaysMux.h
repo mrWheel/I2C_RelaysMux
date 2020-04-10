@@ -1,7 +1,7 @@
 /*
 ***************************************************************************  
 **
-**  File    : I2C_MuxLib.h
+**  File    : I2C_RelaysMux.h
 **  Version : v0.6.3
 **
 **  Copyright (c) 2020 Willem Aandewiel
@@ -11,8 +11,8 @@
 */
 
 
-#ifndef _I2C_RELAYMUX_H
-#define _I2C_RELAYMUX_H
+#ifndef _I2C_RELAYSMUX_H
+#define _I2C_RELAYSMUX_H
 
 #include "Arduino.h"
 #include "Wire.h"
