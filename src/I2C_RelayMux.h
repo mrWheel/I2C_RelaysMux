@@ -11,8 +11,8 @@
 */
 
 
-#ifndef _I2C_MUXLIB_H
-#define _I2C_MUXLIB_H
+#ifndef _I2C_RELAYMUX_H
+#define _I2C_RELAYMUX_H
 
 #include "Arduino.h"
 #include "Wire.h"
@@ -60,6 +60,7 @@ public:
   bool    digitalWrite(byte, byte); 
   bool    setI2Caddress(uint8_t newAddress);  // set a new I2C address for this Slave (1 .. 127)        
   bool    setNumRelays(uint8_t numRelays);    // set the number of relays on the board (8 or 16)        
+  void    showRegister(size_t const size, void const * const ptr, Stream *outp);
   
 private:
   TwoWire           *_I2Cbus;
@@ -79,7 +80,6 @@ private:
   bool      writeCommand2Bytes(byte CMD, byte GPIO_PIN);
   bool      writeCommand3Bytes(byte CMD, byte GPIO_PIN, byte HIGH_LOW);
 
-  void showRegister(size_t const size, void const * const ptr);
 };
 
 #endif

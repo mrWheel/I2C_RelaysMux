@@ -1,0 +1,33 @@
+###########################################
+# Syntax I2C_RelayMux library
+###########################################
+
+###########################################
+# Datatypes (KEYWORD1)
+###########################################
+
+I2CMUX               	KEYWORD1
+CMD_PINMODE         	KEYWORD1
+CMD_DIGITALWRITE         	KEYWORD1
+CMD_DIGITALREAD         	KEYWORD1
+CMD_TESTRELAYS         	KEYWORD1
+CMD_READCONF         	KEYWORD1
+CMD_WRITECONF        	KEYWORD1
+CMD_REBOOT           	KEYWORD1
+
+###########################################
+# Methods and Functions (KEYWORD2)
+###########################################
+
+begin            	KEYWORD2                               
+isConnected            	KEYWORD2                               
+getMajorRelease      	KEYWORD2
+getMinorRelease      	KEYWORD2
+getWhoAmI            	KEYWORD2
+getStatus            	KEYWORD2                               
+pinMode         	KEYWORD2
+digitalRead         	KEYWORD2
+digitalWrite         	KEYWORD2
+setI2Caddress        	KEYWORD2      
+setNumRelays        	KEYWORD2      
+showRegister        	KEYWORD2      

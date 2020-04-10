@@ -27,7 +27,8 @@
 #define LOOP_INTERVAL        1000
 #define INACTIVE_TIME      120000
 
-#include "I2C_MuxLib.h"
+#include "/Users/WillemA/Documents/ArduinoProjects/I2C_Relay_Mux/I2C_MuxLib/src/I2C_MuxLib.h"
+//#include "../I2C_MuxLib/src/I2C_MuxLib.h"
 
 #include <TelnetStream.h>       // https://github.com/jandrassy/TelnetStream/commit/1294a9ee5cc9b1f7e51005091e351d60c8cddecf
 #include "networkStuff.h"
@@ -45,7 +46,7 @@ int           numRelays;
 uint32_t      loopTimer, inactiveTimer;
 uint32_t      offSet;
 bool          loopTestOn = false;
-byte          loopState = 0;
+uint16_t      loopCount = 0;
 String        command;
 
 //===========================================================================================
@@ -56,13 +57,21 @@ void printRegister(size_t const size, void const * const ptr)
   unsigned char byte;
   int i, j;
   Serial.print(F("["));
+  TelnetStream.print(F("["));
   for (i=size-1; i>=0; i--) {
+    if (i<size-1)
+    {
+      Serial.print(" ");
+      TelnetStream.print(" ");
+    }
     for (j=7; j>=0; j--) {
       byte = (b[i] >> j) & 1;
       Serial.print(byte);
+      TelnetStream.print(byte);
     }
   }
-  Serial.print(F("] "));
+  Serial.println(F("] "));
+  TelnetStream.println(F("] "));
 } // printRegister()
 
 
@@ -143,12 +152,14 @@ void loopRelays()
       loopTestOn = false;
       return;
     }
-    loopState++;
-    for (int i=0; i<8; i++)
+    numRelays    = relay.getNumRelays();
+    loopCount++;
+    for (int i=0; i<numRelays; i++)
     {
-      if (loopState & (1<<i)) relay.digitalWrite((i+1), HIGH);
+      if (loopCount & (1<<i)) relay.digitalWrite((i+1), HIGH);
       else                    relay.digitalWrite((i+1), LOW);
     }
+    printRegister(sizeof(loopCount), &loopCount);
 
 } // loopRelays()
 
@@ -177,6 +188,45 @@ bool Mux_Status()
   Serial.println("] relays\r\n"); 
 
 } // Mux_Status()
+
+
+//===========================================================================================
+bool ScanI2Cbus(byte startAddress)
+{
+    actI2Caddress = findSlaveAddress(startAddress);
+    Serial.println();
+    if (actI2Caddress != 0xFF) {
+      Serial.print(F("\nConnecting to  I2C-relay .."));
+      Serial.print(F(". connecting with slave @[0x"));
+      Serial.print(actI2Caddress, HEX);
+      Serial.println(F("]"));
+      Serial.flush();
+      if (relay.begin(Wire, actI2Caddress)) {
+        majorRelease = relay.getMajorRelease();
+        minorRelease = relay.getMinorRelease();
+        Serial.print(F(". connected with slave @[0x"));
+        Serial.print(actI2Caddress, HEX);
+        Serial.print(F("] Release[v"));
+        Serial.print(majorRelease);
+        Serial.print(F("."));
+        Serial.print(minorRelease);
+        Serial.println(F("]"));
+        Serial.flush();
+        actI2Caddress = relay.getWhoAmI();
+        I2C_MuxConnected = true;
+        return true;
+        
+      } else {
+        Serial.println(F(".. Error connecting to I2C slave .."));
+        Serial.flush();
+        I2C_MuxConnected = false;
+        delay(5000);
+      }
+    }
+
+    return false;
+  
+} // ScanI2Cbus()
 
 
 
@@ -290,7 +340,7 @@ void executeCommand(String command)
   if (command == "writeconfig") relay.writeCommand(1<<CMD_WRITECONF);
   if (command == "reboot")      relay.writeCommand(1<<CMD_REBOOT);
   if (command == "help")        { helpx(&Serial); helpx(&TelnetStream); }
-  if (command == "rescan")      setup();
+  if (command == "rescan")      ScanI2Cbus(1);
 
 } // executeCommand()
 
@@ -375,44 +425,12 @@ void setup()
   Serial.flush();
 
   I2C_MuxConnected = false;
-  while (!I2C_MuxConnected)
+  while (!ScanI2Cbus(1))
   {
-    actI2Caddress = findSlaveAddress(1);
-    Serial.println();
-    if (actI2Caddress != 0xFF) {
-      Serial.print(F("\nConnecting to  I2C-relay .."));
-      Serial.print(F(". connecting with slave @[0x"));
-      Serial.print(actI2Caddress, HEX);
-      Serial.println(F("]"));
-      Serial.flush();
-      if (relay.begin(Wire, actI2Caddress)) {
-        majorRelease = relay.getMajorRelease();
-        minorRelease = relay.getMinorRelease();
-        Serial.print(F(". connected with slave @[0x"));
-        Serial.print(actI2Caddress, HEX);
-        Serial.print(F("] Release[v"));
-        Serial.print(majorRelease);
-        Serial.print(F("."));
-        Serial.print(minorRelease);
-        Serial.println(F("]"));
-        Serial.flush();
-        actI2Caddress = relay.getWhoAmI();
-        I2C_MuxConnected = true;
-      } else {
-        Serial.println(F(".. Error connecting to I2C slave .."));
-        Serial.flush();
-        I2C_MuxConnected = false;
-        delay(5000);
-      }
-    }
-    else
-    {
-      Serial.println(F("\r\n.. no I2C slave found.."));
-      Serial.flush();
-      I2C_MuxConnected = false;
-      delay(5000);
-
-    }
+    Serial.println(F("\r\n.. no I2C slave found..Start rescan ..\r\n"));
+    Serial.flush();
+    I2C_MuxConnected = false;
+    delay(5000);
   } // while not connected
 
   loopTimer     = millis();

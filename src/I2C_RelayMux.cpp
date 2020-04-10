@@ -10,7 +10,7 @@
 ***************************************************************************      
 */
 
-#include "I2C_MuxLib.h"
+#include "/Users/WillemA/Documents/ArduinoProjects/I2C_Relay_Mux/I2C_MuxLib/src/I2C_MuxLib.h"
 
 // Constructor
 I2CMUX::I2CMUX() { }
@@ -385,20 +385,21 @@ bool I2CMUX::writeCommand3Bytes(byte CMD, byte GPIO_PIN, byte HIGH_LOW)
 
 //===========================================================================================
 //assumes little endian
-void I2CMUX::showRegister(size_t const size, void const * const ptr)
+void I2CMUX::showRegister(size_t const size, void const * const ptr, Stream *outp)
 {
   unsigned char *b = (unsigned char*) ptr;
   unsigned char byte;
   int i, j;
-  Serial.print("[");
+  outp.print("[");
   for (i=size-1; i>=0; i--) {
-    if (i != (size-1)) Serial.print(" ");
+    if (i < (size-1)) outp.print(" ");
     for (j=7; j>=0; j--) {
       byte = (b[i] >> j) & 1;
-      Serial.print(byte);
+      outp.print(byte);
     }
   }
-  Serial.print("] ");
+  outp.println("]");
+  
 } // showRegister()
 
 
