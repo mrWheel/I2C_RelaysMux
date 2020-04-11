@@ -2,7 +2,7 @@
 ***************************************************************************  
 **
 **  File    : I2C_RelaysMux.h
-**  Version : v0.6.3
+**  Version : v1.0
 **
 **  Copyright (c) 2020 Willem Aandewiel
 **

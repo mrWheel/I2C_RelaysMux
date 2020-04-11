@@ -2,7 +2,7 @@
 ***************************************************************************  
 **
 **  File    : I2C_RelaysMux.cpp
-**  Version : v0.6.3
+**  Version : v1.0
 **
 **  Copyright (c) 2020 Willem Aandewiel
 **
@@ -390,15 +390,15 @@ void I2CMUX::showRegister(size_t const size, void const * const ptr, Stream *out
   unsigned char *b = (unsigned char*) ptr;
   unsigned char byte;
   int i, j;
-  outp.print("[");
+  outp->print("[");
   for (i=size-1; i>=0; i--) {
-    if (i < (size-1)) outp.print(" ");
+    if (i < (size-1)) outp->print(" ");
     for (j=7; j>=0; j--) {
       byte = (b[i] >> j) & 1;
-      outp.print(byte);
+      outp->print(byte);
     }
   }
-  outp.println("]");
+  outp->println("]");
   
 } // showRegister()
 
