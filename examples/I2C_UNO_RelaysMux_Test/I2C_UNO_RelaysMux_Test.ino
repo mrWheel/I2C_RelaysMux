@@ -1,11 +1,11 @@
 /*
 ***************************************************************************
 **
-**  Program     : I2C_UNO_Relay_Mux_Test
+**  Program     : I2C_UNO_RelaysMux_Test
 */
-#define _FW_VERSION  "v0.6 (08-04-2020)"
+#define _FW_VERSION  "v1.0 (11-04-2020)"
 /*
-**  Description : Test FTM I2C Relay Multiplexer
+**  Description : Test I2C Relay Multiplexer
 **
 **  Copyright (c) 2020 Willem Aandewiel
 **
@@ -17,57 +17,26 @@
 #define I2C_MUX_ADDRESS      0x48    // the 7-bit address 
 //#define _SDA                  4
 //#define _SCL                  5
-#define LED_ON                  0
-#define LED_OFF               255
-#define TESTPIN                13
-#define LED_RED                12
-#define LED_GREEN              13
-#define LED_WHITE              14
 
 #define LOOP_INTERVAL        1000
-#define PROFILING
+#define INACTIVE_TIME      120000
 
 //#define Debugf      Serial.printf
 
-#include "I2C_MuxLib.h"
+#include <I2C_RelaysMux.h>
 
 
-I2CMUX  relay; //Create instance of the I2CMUX object
+I2CMUX        relay; //Create instance of the I2CMUX object
 
 byte          actI2Caddress = I2C_MUX_ADDRESS;
 byte          whoAmI;
 byte          majorRelease, minorRelease;
 bool          I2C_MuxConnected;
-int           count4Wait = 0;
 int           numRelays; 
-uint32_t      loopTimer, switchBoardTimer, builtinLedTimer, ledRedTimer, ledGreenTimer, ledWhiteTimer;
-uint32_t      offSet;
+uint32_t      loopTimer, inactiveTimer;
 bool          loopTestOn = false;
-byte          loopState = 0;
+uint16_t      loopRegister = 0;
 String        command;
-
-//===========================================================================================
-void requestEvent()
-{
-  // nothing .. yet
-}
-
-//===========================================================================================
-//assumes little endian
-void printRegister(size_t const size, void const * const ptr)
-{
-  unsigned char *b = (unsigned char*) ptr;
-  unsigned char byte;
-  int i, j;
-  Serial.print(F("["));
-  for (i=size-1; i>=0; i--) {
-    for (j=7; j>=0; j--) {
-      byte = (b[i] >> j) & 1;
-      Serial.print(byte);
-    }
-  }
-  Serial.print(F("] "));
-} // printRegister()
 
 
 //===========================================================================================
@@ -96,10 +65,25 @@ byte findSlaveAddress(byte startAddress)
       Serial.print(F("]"));
       return address;
     }
+    delay(25);
   }
   return 0xFF;
 
 } // findSlaveAddress()
+
+
+//===========================================================================================
+void setLoopRegister()
+{
+  loopRegister = 0;  
+  for (int p=1; p<=numRelays; p++) {
+    if (relay.digitalRead(p) == 1)
+    {
+      loopRegister |= (1<< (p-1));
+    }
+  }
+  
+} // setLoopRegister()
 
 
 //===========================================================================================
@@ -126,18 +110,28 @@ void displayPinState()
 //===========================================================================================
 void loopRelays()
 {
+    inactiveTimer = millis();
+
     whoAmI       = relay.getWhoAmI();
     if (whoAmI != I2C_MUX_ADDRESS && whoAmI != 0x24) {
       Serial.println("No connection with Multiplexer .. abort!");
-      loopTestOn = false;
+      loopTestOn       = false;
+      I2C_MuxConnected = true;
       return;
     }
-    loopState++;
-    for (int i=0; i<8; i++)
+    numRelays    = relay.getNumRelays();
+    loopRegister++;
+    for (int i=0; i<numRelays; i++)
     {
-      if (loopState & (1<<i)) relay.digitalWrite((i+1), HIGH);
-      else                    relay.digitalWrite((i+1), LOW);
+      if (loopRegister & (1<<i)) relay.digitalWrite((i+1), HIGH);
+      else                       relay.digitalWrite((i+1), LOW);
     }
+    for (int i=(numRelays+1); i<=16; i++)
+    {
+      loopRegister &= ~(1<< (i-1));
+      relay.digitalWrite((i+1), LOW);
+    }
+    relay.showRegister(sizeof(loopRegister), &loopRegister, &Serial);
 
 } // loopRelays()
 
@@ -168,6 +162,45 @@ bool Mux_Status()
 } // Mux_Status()
 
 
+//===========================================================================================
+bool ScanI2Cbus(byte startAddress)
+{
+    actI2Caddress = findSlaveAddress(startAddress);
+    Serial.println();
+    if (actI2Caddress != 0xFF) {
+      Serial.print(F("\nConnecting to  I2C-relay .."));
+      Serial.print(F(". connecting with slave @[0x"));
+      Serial.print(actI2Caddress, HEX);
+      Serial.println(F("]"));
+      Serial.flush();
+      if (relay.begin(Wire, actI2Caddress)) {
+        majorRelease = relay.getMajorRelease();
+        minorRelease = relay.getMinorRelease();
+        Serial.print(F(". connected with slave @[0x"));
+        Serial.print(actI2Caddress, HEX);
+        Serial.print(F("] Release[v"));
+        Serial.print(majorRelease);
+        Serial.print(F("."));
+        Serial.print(minorRelease);
+        Serial.println(F("]"));
+        Serial.flush();
+        actI2Caddress = relay.getWhoAmI();
+        I2C_MuxConnected = true;
+        return true;
+        
+      } else {
+        Serial.println(F(".. Error connecting to I2C slave .."));
+        Serial.flush();
+        I2C_MuxConnected = false;
+        delay(5000);
+      }
+    }
+
+    return false;
+  
+} // ScanI2Cbus()
+
+
 
 //===========================================================================================
 void help()
@@ -185,7 +218,7 @@ void help()
   Serial.println(F("    status;      -> I2C mux status"));
   Serial.println(F("    pinstate;    -> List's state of all relay's"));
   Serial.println(F("    looptest;    -> looping"));
-  Serial.println(F("    testrelays;  -> longer test"));
+  Serial.println(F("    testrelays;  -> test on Relay Board"));
   Serial.println(F("    whoami;      -> shows I2C address Slave MUX"));
   Serial.println(F("    writeconfig; -> write config to eeprom"));
   Serial.println(F("    reboot;      -> reboot I2C Mux"));
@@ -195,30 +228,24 @@ void help()
 
 
 //===========================================================================================
-void readCommand()
+void setAllToZero()
 {
-  String command = "";
-  if (!Serial.available()) {
-    return;
-  }
-  Serial.setTimeout(500);  // ten seconds
-  command = Serial.readStringUntil(';');
-  command.toLowerCase();
-  command.trim();
-  for (int i = 0; i < command.length(); i++)
-  {
-    if (command[i] < ' ' || command[i] > '~') command[i] = 0;
-  }
+  relay.setNumRelays(16);
+  for (int i=1; i<=16; i++) relay.digitalWrite(i, LOW); 
+  relay.setNumRelays(numRelays);
+  
+} // setAllToZero()
 
-  loopTestOn = false;
-  
-  if (command.length() < 1) { help(); return; }
-  Serial.print("command["); Serial.print(command); Serial.println("]");
-  
+//===========================================================================================
+void executeCommand(String command)
+{
+  inactiveTimer = millis();
+  loopTestOn    = false;
+
   if (command == "adres=48") {actI2Caddress = 0x48; relay.setI2Caddress(actI2Caddress); }
   if (command == "adres=24") {actI2Caddress = 0x24; relay.setI2Caddress(actI2Caddress); }
-  if (command == "board=8")  {numRelays = 8;  relay.setNumRelays(numRelays); }
-  if (command == "board=16") {numRelays = 16; relay.setNumRelays(numRelays); }
+  if (command == "board=8")  {numRelays = 8;  relay.setNumRelays(numRelays); command = "all=0"; }
+  if (command == "board=16") {numRelays = 16; relay.setNumRelays(numRelays); command = "all=0"; }
   if (command == "0=1")       relay.digitalWrite(0,  HIGH); 
   if (command == "0=0")       relay.digitalWrite(0,  LOW); 
   if (command == "1=1")       relay.digitalWrite(1,  HIGH); 
@@ -257,20 +284,44 @@ void readCommand()
   {
     for (int i=1; i<=numRelays; i++) relay.digitalWrite(i, HIGH); 
   }
-  if (command == "all=0")
-  {
-    for (int i=1; i<=numRelays; i++) relay.digitalWrite(i, LOW); 
-  }
+  if (command == "all=0") setAllToZero();
   if (command == "status")      Mux_Status();
   if (command == "pinstate")    displayPinState();
   if (command == "looptest")    loopTestOn = true;
   if (command == "testrelays")  relay.writeCommand(1<<CMD_TESTRELAYS);
-  if (command == "whoami")      Serial.println(relay.getWhoAmI(), HEX);
+  if (command == "whoami")      { Serial.print("I am 0x"); 
+                                  Serial.println(relay.getWhoAmI(), HEX);
+                                }
   if (command == "readconfig")  relay.writeCommand(1<<CMD_READCONF);
   if (command == "writeconfig") relay.writeCommand(1<<CMD_WRITECONF);
   if (command == "reboot")      relay.writeCommand(1<<CMD_REBOOT);
   if (command == "help")        help();
-  if (command == "rescan")      setup();
+  if (command == "rescan")      ScanI2Cbus(1);
+  
+} // executeCommand()
+
+
+//===========================================================================================
+void readCommand()
+{
+  String command = "";
+  if (!Serial.available()) {
+    return;
+  }
+  Serial.setTimeout(500);  // ten seconds
+  command = Serial.readStringUntil(';');
+  command.toLowerCase();
+  command.trim();
+  for (int i = 0; i < command.length(); i++)
+  {
+    if (command[i] < ' ' || command[i] > '~') command[i] = 0;
+  }
+  
+  if (command.length() < 1) { help(); return; }
+
+  Serial.print("command["); Serial.print(command); Serial.println("]");
+
+  executeCommand(command);
   
 } // readCommand()
 
@@ -288,30 +339,22 @@ void setup()
   Serial.println(F(".. done"));
   Serial.flush();
 
-  actI2Caddress = findSlaveAddress(1);
-  if (actI2Caddress != 0xFF) {
-    Serial.print(F("\nConnecting to  I2C-relay .."));
-    if (relay.begin(Wire, actI2Caddress)) {
-      majorRelease = relay.getMajorRelease();
-      minorRelease = relay.getMinorRelease();
-      Serial.print(F(". connected with slave @[0x"));
-      Serial.print(actI2Caddress, HEX);
-      Serial.print(F("] Release[v"));
-      Serial.print(majorRelease);
-      Serial.print(F("."));
-      Serial.print(minorRelease);
-      Serial.println(F("]"));
-      actI2Caddress = relay.getWhoAmI();
-      I2C_MuxConnected = true;
-    } else {
-      Serial.println(F(".. Error connecting to I2C slave .."));
-      I2C_MuxConnected = false;
-    }
-  }
+  I2C_MuxConnected = false;
+  while (!ScanI2Cbus(1))
+  {
+    Serial.println(F("\r\n.. no I2C slave found..Start rescan ..\r\n"));
+    Serial.flush();
+    I2C_MuxConnected = false;
+    delay(5000);
+  } // while not connected
 
-  loopTimer = millis() + LOOP_INTERVAL;
-  Mux_Status();
-  Serial.println(F("setup() done .. \n"));
+  loopTimer     = millis();
+  loopTestOn    = false;
+  inactiveTimer = millis();
+
+  if (I2C_MuxConnected) Mux_Status();
+
+  Serial.println(F("setup() done .. \r\n"));
 
   help();
 
@@ -323,14 +366,36 @@ void loop()
 {
   if (loopTestOn)
   {
+    inactiveTimer = millis();
+
     if ((millis() - loopTimer) > LOOP_INTERVAL) 
     {
       loopTimer = millis();
       loopRelays();      
     }
   }
+  else
+  {
+    setLoopRegister();
+  }
 
   readCommand();
+
+  if ((millis() - inactiveTimer) > INACTIVE_TIME) 
+  {
+    loopTestOn = true;
+  }
+
+  if (!I2C_MuxConnected)
+  {
+    while (!ScanI2Cbus(1))
+    {
+      Serial.println(F("\r\n.. no I2C slave found..Start rescan ..\r\n"));
+      Serial.flush();
+      I2C_MuxConnected = false;
+      delay(5000);
+    } // while not connected
+  }
    
 } // loop()
 
