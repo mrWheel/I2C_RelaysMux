@@ -17,18 +17,21 @@ void processAPI()
   char   URI[50];
   
   strncpy( URI, httpServer.uri().c_str(), sizeof(URI) );
-
+  //Serial.printf("From[%s] URI[%s]\r\n", httpServer.client().remoteIP().toString().c_str(), URI);
+  
   int8_t wc = splitString(URI, '/', words, 10);
   
   if (words[1] != "api")
   {
     sendApiNotFound(URI);
     return;
-  } else if ( (httpServer.method() == HTTP_GET) && (words[2] == "states") )
+  } else if (   (httpServer.method() == HTTP_GET) 
+             && (words[2] == "states") )
   {
     sendRelayStates();
   }
-  else if ( (httpServer.method() == HTTP_POST || httpServer.method() == HTTP_PUT) && (words[2] == "state") )
+  else if (   (httpServer.method() == HTTP_POST || httpServer.method() == HTTP_PUT) 
+           && (words[2] == "state") )
   {
     setRelayState();
     inactiveTimer = millis();

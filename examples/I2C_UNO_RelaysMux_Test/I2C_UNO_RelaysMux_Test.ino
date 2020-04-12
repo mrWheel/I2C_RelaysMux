@@ -13,6 +13,30 @@
 ***************************************************************************
 */
 
+/*
+**  Connect I2C_RelaysMux to the Arduino UNI 
+**  
+**                                +---------------------
+**   -------------------\         |
+**     8/16 relays  GND o---------o PWR GND
+**     board        SCL o---------o A5      Arduino UNO
+**     with         SDA o---------o A4
+**     I2C_Mux      Vin o---------o PWR Vin (5Volt)
+**   -------------------/         |
+**                                +---------------------
+**
+**  You can enter commands, terminated by ";" and [Enter] in the 
+**  Serial Monitor and watch the relays react.
+**  For an 8 relays board you should enter "board=8" one time
+**  before doing anything else. This setting is saved in EEPROM and
+**  you never have to enter this again.
+**  Same goes for the I2C address of the I2C_RelaysMux. You can  
+**  change this setting with the I2CME.setI2Caddress(newAddress)
+**   method.
+**  The newAddress will also be saved in EEPROM and used the next
+**  time you (re)boot the I2C_Multiplexer.
+*/
+
 
 #define I2C_MUX_ADDRESS      0x48    // the 7-bit address 
 //#define _SDA                  4
@@ -90,14 +114,12 @@ void setLoopRegister()
 void displayPinState()
 {
   Serial.print("  Pin: ");
-//for (int p=1; p<=numRelays; p++) {
   for (int p=numRelays; p>=1; p--) {
     Serial.print(p % 10);
   }
   Serial.println();
 
   Serial.print("State: ");
-//for (int p=1; p<=numRelays; p++) {
   for (int p=numRelays; p>=1; p--) {
     int pState = relay.digitalRead(p);
     if (pState == HIGH)
@@ -108,11 +130,13 @@ void displayPinState()
   
 } //  displayPinState()
 
+
 //===========================================================================================
 uint16_t rightRotate(uint16_t n, uint16_t d, byte s) 
 { 
    return (n >> d)|(n << (s - d)); 
-} 
+   
+} // rightRotate()
 
 
 //===========================================================================================
@@ -120,13 +144,13 @@ void loopRelays()
 {
     inactiveTimer = millis();
     
-    whoAmI       = relay.getWhoAmI();
-    if (whoAmI != I2C_MUX_ADDRESS && whoAmI != 0x24) {
-      Serial.println(F("loopRelays(): No connection with Multiplexer .. abort!"));
-      loopTestOn       = false;
-      I2C_MuxConnected = false;
-      return;
-    }
+//  whoAmI       = relay.getWhoAmI();
+//  if (whoAmI != I2C_MUX_ADDRESS && whoAmI != 0x24) {
+//    Serial.println(F("loopRelays(): No connection with Multiplexer .. abort!"));
+//    loopTestOn       = false;
+//    I2C_MuxConnected = false;
+//    return;
+//  }
     numRelays    = relay.getNumRelays();
     if (loopRegister == 0) loopRegister = 7;
     loopRegister = rightRotate(loopRegister, 1, numRelays);
@@ -228,11 +252,12 @@ void help()
   Serial.println(F("    status;      -> I2C mux status"));
   Serial.println(F("    pinstate;    -> List's state of all relay's"));
   Serial.println(F("    looptest;    -> looping"));
-  Serial.println(F("    testrelays;  -> test on Relay Board"));
+  Serial.println(F("    muxtest;  -> test on Relay Board"));
   Serial.println(F("    whoami;      -> shows I2C address Slave MUX"));
   Serial.println(F("    writeconfig; -> write config to eeprom"));
   Serial.println(F("    reboot;      -> reboot I2C Mux"));
   Serial.println(F("  * reScan;      -> re-scan I2C devices"));
+  Serial.println(F("    help;        -> shows all commands"));
 
 } // help()
 
@@ -298,7 +323,7 @@ void executeCommand(String command)
   if (command == "status")      Mux_Status();
   if (command == "pinstate")    displayPinState();
   if (command == "looptest")    loopTestOn = true;
-  if (command == "testrelays")  relay.writeCommand(1<<CMD_TESTRELAYS);
+  if (command == "muxtest")  relay.writeCommand(1<<CMD_muxtest);
   if (command == "whoami")      { Serial.print("I am 0x"); 
                                   Serial.println(relay.getWhoAmI(), HEX);
                                 }

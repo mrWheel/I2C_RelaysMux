@@ -47,7 +47,7 @@ static const char indexHTML[] PROGMEM =
             
           clearInterval(timeTimer);  
           refreshRelayState();
-          timeTimer = setInterval(refreshRelayState, 3 * 1000); // repeat every 3s
+          timeTimer = setInterval(refreshRelayState, 2 * 1000); // repeat every 2s
       
         } // bootsTrapMain()
   
@@ -83,7 +83,7 @@ static const char indexHTML[] PROGMEM =
                     {
                       tableCells[1].setAttribute("style", "color: white; background: red");
                       tableCells[1].innerHTML = 'ON';
-                      tableCells[1].addEventListener("click", clickOff, false);                  
+                      tableCells[1].addEventListener("click", clickOff);                  
                     }
                   }
                   else 
@@ -139,44 +139,27 @@ static const char indexHTML[] PROGMEM =
         //==============================================================
         function clickOn(e) 
         {
+          var relay=parseInt(this.id.substring(5));
+          //console.log('clickOn('+this.id+') => ['+relay+']');
           // set background of clicked row
-          //if (this.style.backgroundColor != 'gray')
-          //{
-            this.style.backgroundColor = 'orange';
-          //}
-          // now check for gray
-          var rows = document.getElementById('switches').rows;
-          for(var i = 1; i < rows.length; i++) {  // row[0] == header
-            if (rows[i].cells[1].style.backgroundColor == 'orange')
-            {
-              this.style.backgroundColor = 'gray';
-              this.removeEventListener("click", clickOn)
-              sendRelayState(i, 1);
-              return;
-            }
-          }
+          this.style.backgroundColor = 'gray';
+          this.removeEventListener("click", clickOn);
+          sendRelayState(relay, 1);
+          this.addEventListener("click", clickOff);
+
         } // clickOn()
 
         //==============================================================
         function clickOff(e) 
         {
+          var relay=parseInt(this.id.substring(5));
+          //console.log('clickOff('+this.id+') => ['+relay+']');
           // set background of clicked row
-          //if (this.style.backgroundColor != 'gray')
-          //{
-            this.style.backgroundColor = 'skyblue';
-          //}
-          // now check for gray
-          var rows = document.getElementById('switches').rows;
-          for(var i = 1; i < rows.length; i++) {  // row[0] == header
-            if (rows[i].cells[1].style.backgroundColor == 'skyblue')
-            {
-              this.style.backgroundColor = 'gray';
-              this.removeEventListener("click", clickOff)
-              //this.innerHTML = '----';
-              sendRelayState(i, 0);
-              return;
-            }
-          }
+          this.style.backgroundColor = 'gray';
+          this.removeEventListener("click", clickOff);
+          sendRelayState(relay, 0);
+          this.addEventListener("click", clickOn);
+
         } // clickOff()
 
 

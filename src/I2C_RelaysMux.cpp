@@ -234,8 +234,8 @@ int32_t I2CMUX::readReg4Byte(uint8_t addr)
     uint8_t mLSB  = _I2Cbus->read();
     uint8_t mMSB  = _I2Cbus->read();
     uint8_t MSB   = _I2Cbus->read();
-    uint32_t comb = MSB << 24 | mMSB << 16 | mLSB << 8 | LSB;
-    return ((int32_t)MSB << 24 | mMSB << 16 | mLSB << 8 | LSB);
+    uint32_t comb = (uint32_t)MSB << 24 | (uint32_t)mMSB << 16 | (uint32_t)mLSB << 8 | LSB;
+    return (comb);
   }
 
   return (0); // Slave did not respond

@@ -3,7 +3,7 @@
 **
 **  Program     : I2C_ESP8266_RelaysMux_Test
 */
-#define _FW_VERSION  "v1.0 (11-04-2020)"
+#define _FW_VERSION  "v1.0 (12-04-2020)"
 /*
 **  Description : Test I2C Relay Multiplexer
 **
@@ -11,6 +11,33 @@
 **
 **  TERMS OF USE: MIT License. See bottom of file.
 ***************************************************************************
+*/
+
+/*
+**  Connect I2C_RelaysMux to the Arduino UNI 
+**  
+**                                +---------------------
+**   -------------------\         |
+**     8/16 relays  GND o---------o GND
+**     board        SCL o---------o GPIO-05    ESP8266
+**     with         SDA o---------o GPIO-04
+**     I2C_Mux      Vin o---------o 3v3
+**   -------------------/         |
+**                                +---------------------
+**
+**  You can enter commands, terminated by ";" and [Enter] in the 
+**  Serial Monitor and watch the relays react.
+**  For an 8 relays board you should enter "board=8" one time
+**  before doing anything else. This setting is saved in EEPROM and
+**  you never have to enter this again.
+**  Same goes for the I2C address of the I2C_RelaysMux. You can  
+**  change this setting with the I2CME.setI2Caddress(newAddress)
+**   method.
+**  The newAddress will also be saved in EEPROM and used the next
+**  time you (re)boot the I2C_Multiplexer.
+**  
+**  You can connect to the ESP8266 by telnet (PuTTY) on port 23 or
+**  by entering the IP address in your browser.
 */
 
 
@@ -31,8 +58,8 @@
 #include <WiFiUdp.h>            // part of ESP8266 Core https://github.com/esp8266/Arduino
 
 #ifndef STASSID
-#define STASSID "your-ssid"
-#define STAPSK  "your-password"
+#define STASSID "AandeWiFi"   //"your-ssid"
+#define STAPSK  "3741TS12tl"  //"your-password"
 #endif
 
 const char* ssid     = STASSID;
@@ -135,13 +162,13 @@ void setLoopRegister()
 void displayPinState(Stream *sOut)
 {
   sOut->print("  Pin: ");
-  for (int p=1; p<=numRelays; p++) {
+  for (int p=numRelays; p>=1; p--) {
     sOut->print(p % 10);
   }
   sOut->println();
 
   sOut->print("State: ");
-  for (int p=1; p<=numRelays; p++) {
+  for (int p=numRelays; p>=1; p--) {
     int pState = relay.digitalRead(p);
     if (pState == HIGH) sOut->print("H");
     else                sOut->print("L");
@@ -152,19 +179,29 @@ void displayPinState(Stream *sOut)
 
 
 //===========================================================================================
+uint16_t rightRotate(uint16_t n, uint16_t d, byte s) 
+{ 
+   return (n >> d)|(n << (s - d)); 
+   
+} // rightRotate()
+
+
+//===========================================================================================
 void loopRelays()
 {
     inactiveTimer = millis();
 
-    whoAmI       = relay.getWhoAmI();
-    if (whoAmI != I2C_MUX_ADDRESS && whoAmI != 0x24) {
-      Serial.println("No connection with Multiplexer .. abort!");
-      TelnetStream.println("No connection with Multiplexer .. abort!");
-      loopTestOn = false;
-      return;
-    }
+//  whoAmI       = relay.getWhoAmI();
+//  if (whoAmI != I2C_MUX_ADDRESS && whoAmI != 0x24) {
+//    Serial.println("No connection with Multiplexer .. abort!");
+//    TelnetStream.println("No connection with Multiplexer .. abort!");
+//    loopTestOn = false;
+//    return;
+//  }
     numRelays    = relay.getNumRelays();
-    loopRegister++;
+    if (loopRegister == 0) loopRegister = 7;
+    loopRegister = rightRotate(loopRegister, 1, numRelays);
+
     for (int i=0; i<numRelays; i++)
     {
       if (loopRegister & (1<<i)) relay.digitalWrite((i+1), HIGH);
@@ -262,11 +299,12 @@ void help(Stream *sOut)
   sOut->println(F("    status;      -> I2C mux status"));
   sOut->println(F("    pinstate;    -> List's state of all relay's"));
   sOut->println(F("    looptest;    -> looping"));
-  sOut->println(F("    testrelays;  -> longer test"));
+  sOut->println(F("    muxtest;  -> longer test"));
   sOut->println(F("    whoami;      -> shows I2C address Slave MUX"));
   sOut->println(F("    writeconfig; -> write config to eeprom"));
   sOut->println(F("    reboot;      -> reboot I2C Mux"));
   sOut->println(F("  * reScan;      -> re-scan I2C devices"));
+  sOut->println(F("    help;        -> shows all commands"));
 
 } // help()
 
@@ -336,9 +374,15 @@ void executeCommand(String command)
                                   else          displayPinState(&TelnetStream);
                                 }
   if (command == "looptest")    loopTestOn = true;
-  if (command == "testrelays")  relay.writeCommand(1<<CMD_TESTRELAYS);
-  if (command == "whoami")      { if (commandBy == 1) Serial.println(relay.getWhoAmI(), HEX);
-                                  else          TelnetStream.println(relay.getWhoAmI(), HEX);
+  if (command == "muxtest")     relay.writeCommand(1<<CMD_TESTRELAYS);
+  if (command == "whoami")      { if (commandBy == 1) {
+                                    Serial.print(">>> I am ");
+                                    Serial.println(relay.getWhoAmI(), HEX);
+                                  }
+                                  else {
+                                    TelnetStream.print(">>> I am ");
+                                    TelnetStream.println(relay.getWhoAmI(), HEX);
+                                  }
                                 }
   if (command == "readconfig")  relay.writeCommand(1<<CMD_READCONF);
   if (command == "writeconfig") relay.writeCommand(1<<CMD_WRITECONF);
@@ -430,7 +474,7 @@ void setup()
   Serial.println(WiFi.localIP());
 
 
-  Serial.println("Please connect Telnet Client, exit with ^] and 'quit'");
+  Serial.println(F("Please connect Telnet Client, exit with ^] and 'quit'"));
   
   startMDNS("testMux");
   
@@ -443,6 +487,7 @@ void setup()
   //Wire.begin(_SDA, _SCL); // join i2c bus (address optional for master)
   Wire.begin();
   Wire.setClock(100000L); // <-- don't make this 400000. It won't work
+  //Wire.setClock(200000L); // <-- don't make this 400000. It won't work
   Serial.println(F(".. done\r\n"));
   Serial.flush();
 
@@ -482,7 +527,9 @@ void setup()
   });
 
   httpServer.begin();
-  Serial.println(F("\r\nHTTP server gestart"));
+  Serial.print(F("\r\nHTTP server gestart. Go to \"http://"));
+  Serial.print(WiFi.localIP());
+  Serial.println(F("/\"\r\n"));
 
   Serial.println(F("setup() done .. \r\n"));
 
