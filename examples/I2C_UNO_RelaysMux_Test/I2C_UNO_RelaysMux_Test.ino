@@ -3,7 +3,7 @@
 **
 **  Program     : I2C_UNO_RelaysMux_Test
 */
-#define _FW_VERSION  "v1.0 (11-04-2020)"
+#define _FW_VERSION  "v1.0 (12-04-2020)"
 /*
 **  Description : Test I2C Relay Multiplexer
 **
@@ -90,13 +90,15 @@ void setLoopRegister()
 void displayPinState()
 {
   Serial.print("  Pin: ");
-  for (int p=1; p<=numRelays; p++) {
+//for (int p=1; p<=numRelays; p++) {
+  for (int p=numRelays; p>=1; p--) {
     Serial.print(p % 10);
   }
   Serial.println();
 
   Serial.print("State: ");
-  for (int p=1; p<=numRelays; p++) {
+//for (int p=1; p<=numRelays; p++) {
+  for (int p=numRelays; p>=1; p--) {
     int pState = relay.digitalRead(p);
     if (pState == HIGH)
           Serial.print("H");
@@ -106,21 +108,29 @@ void displayPinState()
   
 } //  displayPinState()
 
+//===========================================================================================
+uint16_t rightRotate(uint16_t n, uint16_t d, byte s) 
+{ 
+   return (n >> d)|(n << (s - d)); 
+} 
+
 
 //===========================================================================================
 void loopRelays()
 {
     inactiveTimer = millis();
-
+    
     whoAmI       = relay.getWhoAmI();
     if (whoAmI != I2C_MUX_ADDRESS && whoAmI != 0x24) {
-      Serial.println("No connection with Multiplexer .. abort!");
+      Serial.println(F("loopRelays(): No connection with Multiplexer .. abort!"));
       loopTestOn       = false;
-      I2C_MuxConnected = true;
+      I2C_MuxConnected = false;
       return;
     }
     numRelays    = relay.getNumRelays();
-    loopRegister++;
+    if (loopRegister == 0) loopRegister = 7;
+    loopRegister = rightRotate(loopRegister, 1, numRelays);
+
     for (int i=0; i<numRelays; i++)
     {
       if (loopRegister & (1<<i)) relay.digitalWrite((i+1), HIGH);
@@ -308,7 +318,7 @@ void readCommand()
   if (!Serial.available()) {
     return;
   }
-  Serial.setTimeout(500);  // ten seconds
+  Serial.setTimeout(100);  // ten seconds
   command = Serial.readStringUntil(';');
   command.toLowerCase();
   command.trim();

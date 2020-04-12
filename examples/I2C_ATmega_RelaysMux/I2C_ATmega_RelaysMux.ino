@@ -2,7 +2,7 @@
 ***************************************************************************  
 **
 **    Firmware : I2C_ATmega_RelaysMux
-**    Date     : 08-04-2020
+**    Date     : 12-04-2020
 */
 #define _MAJOR_VERSION  1
 #define _MINOR_VERSION  7
@@ -16,7 +16,36 @@
 *     See: http://www.engbedded.com/fusecalc
 *     
 *     Set fuses:
-*     
+*     Bit LOW                        
+*     7   [ ] CKDIV8    - Divide clock by 8
+*     6   [ ] CKOUT     - Clock output
+*     5   [ ] SUT1      - Select start-up time
+*     4   [ ] SUT0      - Select start-up time
+*     3   [ ] CKSEL3    - Select Clock Source
+*     2   [ ] CKSEL2    - Select Clock Source
+*     1   [ ] CKSEL1    - Select Clock Source
+*     0   [ ] CKSEL0    - Select Clock Source
+*
+*     Bit HIGH                          
+*     7   [ ] RSTDISBL  - External reset disable
+*     6   [ ] DWEN      - debugWIRE Enable
+*     5   [X] SPIEN     - Enable Serial programming and Data Downloading
+*     4   [ ] WDTON     - Watchdog Timer Always On
+*     4   [X] EESAVE    - EEPROM memory is preserved through chip erase
+*     2   [ ] BOOTSZ1   - Select boot size
+*     1   [ ] BOOTSZ0   - Select boot size
+*     0   [X] BOOTRST   - Select reset vector
+*
+*     Bit EXTENDED                          
+*     7   [ ]
+*     6   [ ]
+*     5   [ ]
+*     4   [ ]
+*     3   [ ]
+*     2   [ ] BODLEVEL2 - Brown-out Detector trigger level
+*     1   [ ] BODLEVEL1 - Brown-out Detector trigger level
+*     0   [ ] BODLEVEL0 - Brown-out Detector trigger level
+*
 *     -U lfuse:w:0xff:m -U hfuse:w:0xd6:m -U efuse:w:0xff:m
 *     
 *     //Use the standard Arduino UNO bootloader
@@ -25,25 +54,16 @@
 *     Board:  Arduino/Genuino UNO
 *     Chip:   ATmega328P
 *     Clock: source: Ext. Crystal Osc. 16 MHz (Ceramic Resonator)
-*     B.O.D. Level: B.O.D. Enabled (1.8v)    [if possible]
-*     B.O.D. Mode (active): B.O.D. Disabled  [if possible]
-*     B.O.D. Mode (sleep): B.O.D. Disabled   [if possible]
-*     Save EEPROM: EEPROM retained           [if possible]
 *     
-*     Fuses OK (E:FF, H:D7, L:F7) << seems ok
-*     
-*         ..Arduino15/packages/arduino/tools/avrdude/6.3.0-arduino17\
+*     ..Arduino15/packages/arduino/tools/avrdude/6.3.0-arduino17 \
 *         /bin/avrdude -P usb -c usbtiny -b 9600 -B 100 -p ATmega328P \
-*         -U lfuse:w:0xf7:m -U hfuse:w:0xd7:m -U efuse:w:0xff:m <<
-*         -U lfuse:w:0xf7:m -U hfuse:w:0xd4:m -U efuse:w:0xff:m
 *         -U lfuse:w:0xff:m -U hfuse:w:0xd6:m -U efuse:w:0xff:m
-*         -U lfuse:w:0x7F:m -U hfuse:w:0xD6:m -U efuse:w:0xff:m -- NOT
 *
 */
 
 //#define DEBUG_ON
 
-// #include <avr/wdt.h>
+#include <avr/wdt.h>
 // #include <Arduino.h>
 #include <Wire.h>
 #include <EEPROM.h>
@@ -52,18 +72,6 @@
 
 #define _RELAY_ON             0
 #define _RELAY_OFF            255
-
-#ifdef DEBUG_ON
-  #define Dbegin(...)     ({ Serial.begin(__VA_ARGS__); })
-  #define Dprint(...)     ({ Serial.print(__VA_ARGS__); })
-  #define Dprintln(...)   ({ Serial.println(__VA_ARGS__); })
-  #define Dflush()        ({ Serial.flush(); })
-#else
-  #define Dbegin(...) 
-  #define Dprint(...) 
-  #define Dprintln(...) 
-  #define Dflush() 
-#endif
 
 struct registerLayout {
   byte      status;         // 0x00
@@ -113,19 +121,6 @@ enum  {  CMD_PINMODE, CMD_DIGITALWRITE, CMD_DIGITALREAD
        , CMD_READCONF, CMD_WRITECONF, CMD_REBOOT 
       };
 
-
-//==========================================================================
-void DprintRegisters(const char *fromFunc)
-{
-  Dprint("\r\n"); Dprintln(fromFunc);
-  Dprint(">> status       ["); Dprint(registerPointer[0]);        Dprintln("]");
-  Dprint(">> majorRelease ["); Dprint(registerPointer[1]);        Dprintln("]");
-  Dprint(">> minorRelease ["); Dprint(registerPointer[2]);        Dprintln("]");
-  Dprint(">> whoAmI       ["); Dprint(registerPointer[4],HEX);    Dprintln("]");
-  Dprint(">> numRelays    ["); Dprint(registerPointer[5]);        Dprintln("]\r\n");
-
-} // DprintRegisters()
-
 //==========================================================================
 void wait(uint16_t msecs)
 {
@@ -141,26 +136,23 @@ void oneLoop()
 {
     for (int i=1; i<=registerStack.numberOfRelays; i++) 
     {
-      Dprint("L");
       if (registerStack.numberOfRelays == 8)
             digitalWrite(p2r8[i],  LOW);
       else  digitalWrite(p2r16[i], LOW);
-      //wdt_reset();
-      wait(750);
+      wdt_reset();
+      wait(100);
     }
-    wait(1000);
-    Dprintln();
-    //wdt_reset();
+//  wait(300);
+    wdt_reset();
     for (int i=1; i<=registerStack.numberOfRelays; i++) 
     {
-      Dprint("H");
       if (registerStack.numberOfRelays == 8)
             digitalWrite(p2r8[i],  HIGH);
       else  digitalWrite(p2r16[i], HIGH);
-      wait(250);
-      //wdt_reset();
+      wait(100);
+      wdt_reset();
     }
-    Dprintln();
+//  wait(300);
 
 } // oneLoop()
 
@@ -168,8 +160,6 @@ void oneLoop()
 //==========================================================================
 void testRelays()
 {
-  digitalWrite(0, LOW);
-  Dprintln("\r\ntestRelays()");
   for (int x=0; x<10;x++) {
     oneLoop();
   }
@@ -180,19 +170,14 @@ void testRelays()
 //==========================================================================
 void reBoot()
 {
-  Dprintln("reboot");
-  //wdt_reset();
-  //for (int i=0; i<=10; i++) {
   while(true) 
   {
-    Dprint(".");
     digitalWrite(p2r16[11], LOW);
     wait(500);
     digitalWrite(p2r16[11], HIGH);
     wait(500);
   }
-  //while (true) {} // let WDT crash
-  setup();
+  while (true) {} // let WDT crash
 
 } //  reBoot()
 
@@ -200,13 +185,9 @@ void reBoot()
 //==========================================================================
 void setup()
 {
-  //MCUSR=0x00; //<<<-- keep this in!
-  //wdt_disable();
+  MCUSR=0x00; //<<<-- keep this in!
+  wdt_disable();
 
-  Dbegin(115200);     // this is PD0 (RX) and PD1 (TX)
-  Dprint("\n\n(re)starting I2C Mux Slave ..");
-  Dprint(_MAJOR_VERSION); Dprint("."); Dprintln(_MINOR_VERSION);
-  
   PORTB = B00100111;  // PB0=D08,PB1=D09,PB2=D10,PB5=D13
   DDRB  = B00100111;  // set GPIO pins on PORTB to OUTPUT
   PORTC = B00001111;  // PC0=D12,PC1=D13,PC2=D14,PC3=D15
@@ -219,10 +200,8 @@ void setup()
   readConfig();
   
   startI2C();
-
-  Dprintln("\r\nDone..!\r\n");
   
-  //wdt_enable(WDTO_4S);
+  wdt_enable(WDTO_4S);
 
 } // setup()
 
@@ -230,7 +209,7 @@ void setup()
 //==========================================================================
 void loop()
 {
-   //wdt_reset();
+   wdt_reset();
    
 } // loop()
 

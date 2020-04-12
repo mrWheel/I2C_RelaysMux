@@ -21,7 +21,6 @@ void startI2C()
   // (Re)Declare the Events.
   Wire.onReceive(receiveEvent);
   Wire.onRequest(requestEvent);
-  // wdt_reset();
 
 } // startI2C()
 
@@ -33,7 +32,6 @@ boolean isConnected()
   if (Wire.endTransmission() != 0) {
     return (false); // Master did not ACK
   }
-  // wdt_reset();
   return (true);
 
 } // isConnected()
@@ -43,17 +41,9 @@ boolean isConnected()
 void processCommand(byte command)
 {
   byte GPIO_PIN, PINMODE, HIGH_LOW, GPIOSTATE;
-
-  Dprint("Processing command ["); Dprint(command, BIN); Dprintln("]");
-  Dflush();
   if ((command & (1<<CMD_PINMODE))) {
-    Dprint("Command pinMode("); 
     GPIO_PIN = Wire.read();
-    Dprint(GPIO_PIN);
-    Dprint(", ");
     PINMODE = Wire.read();
-    Dprint(HIGH_LOW);
-    Dprintln(")");
     if (registerStack.numberOfRelays == 8)
     {
       if (GPIO_PIN >= 1 && GPIO_PIN <= 8) 
@@ -70,13 +60,8 @@ void processCommand(byte command)
     }
   }
   else if ((command & (1<<CMD_DIGITALWRITE))) {
-    Dprint("Command digitalWrite("); 
     GPIO_PIN = Wire.read();
-    Dprint(GPIO_PIN);
-    Dprint(", ");
     HIGH_LOW = Wire.read();
-    Dprint(HIGH_LOW);
-    Dprintln(")");
     if (registerStack.numberOfRelays == 8)
     {
       if (GPIO_PIN >= 1 && GPIO_PIN <= 8) 
@@ -93,17 +78,12 @@ void processCommand(byte command)
     }
   }
   else if ((command & (1<<CMD_DIGITALREAD))) {
-    Dprint("Command digitalRead("); 
     GPIO_PIN = Wire.read();
-    Dprint(GPIO_PIN);
-    Dprint(") => ");
     if (registerStack.numberOfRelays == 8)
     {
       if (GPIO_PIN >= 1 && GPIO_PIN <= 8) 
       {
         registerStack.lastGpioState = !digitalRead(p2r8[GPIO_PIN]);
-        Dprint("State is ["); Dprint(registerStack.lastGpioState); 
-        Dprintln("]");
       }
     }
     else
@@ -111,8 +91,6 @@ void processCommand(byte command)
       if (GPIO_PIN >= 1 && GPIO_PIN <= 16) 
       {
         registerStack.lastGpioState = !digitalRead(p2r16[GPIO_PIN]);
-        Dprint("State is ["); Dprint(registerStack.lastGpioState); 
-        Dprintln("]");
       }
     }
   }
@@ -131,8 +109,6 @@ void processCommand(byte command)
   //-----> execute reBoot always last!! <-----
   if ((command & (1<<CMD_REBOOT))) 
   {
-    Dprintln("Got reboot command ...");
-    Dflush();
     reBoot();
   }
 
@@ -145,16 +121,11 @@ void processCommand(byte command)
 void receiveEvent(int numberOfBytesReceived) 
 {
   //(void)numberOfBytesReceived;  // cast unused parameter to void to avoid compiler warning
-  Dprint("receiveEvent() ..reg: 0x");
   
   registerNumber = Wire.read(); // Get the memory map offset from the user
-  Dprintln(registerNumber, HEX);
   
   if (registerNumber == _CMD_REGISTER) {   // command
     byte command = Wire.read(); // read the command
-    Dprint("register[0x");      Dprint(registerNumber, HEX); 
-    Dprint("] -> command[");  Dprint(command);        
-    Dprintln("]");
     processCommand(command);
     return;
   }
@@ -165,14 +136,9 @@ void receiveEvent(int numberOfBytesReceived)
     byte temp = Wire.read();
     if ( (x + registerNumber) < sizeof(registerLayout)) {
       //Store the result into the register map
-      Dprint("Trying to write to reg[0x");
-      Dprint((registerNumber + x), HEX);
-      Dprint("] ");
       if ((registerNumber + x) < 4 && (registerNumber + x) >= 6) {
-        Dprintln("Error! readonly register!");
         return;
       }
-      Dprintln("OK");
       registerPointer[registerNumber + x] = temp;
       //--- address change is a special case: writeConfig
       if ((registerNumber + x) == _I2CMUX_WHOAMI) 
@@ -182,7 +148,6 @@ void receiveEvent(int numberOfBytesReceived)
       }
     }
   }
-  DprintRegisters("receiveEvent:");
 
 } //  receiveEvent()
 
@@ -192,20 +157,10 @@ void receiveEvent(int numberOfBytesReceived)
 //-- All getters get there data from here --------------------------
 void requestEvent()
 {
-  // inactiveTimer = millis();
-
-  Dprint("requestEvent() ..");
-
   //----- return max. 4 bytes to master, starting at registerNumber -------
   for (uint8_t x = 0; ( (x < 4) && (x + registerNumber) < (sizeof(registerLayout) - 1) ); x++) {
-    if ((x + registerNumber) <= 0x060) {
-      Dprint("["); Dprint(registerNumber + x); Dprint("] ");
-      Dprint(registerPointer[x + registerNumber]);
-      Dprint(" ");
-    }
     Wire.write(registerPointer[(x + registerNumber)]);
   }
-  DprintRegisters("requestEvent:");
 
 } // requestEvent()
 

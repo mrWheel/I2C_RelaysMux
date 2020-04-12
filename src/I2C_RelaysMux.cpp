@@ -45,7 +45,7 @@ bool I2CMUX::isConnected()
 //-------------------------------------------------------------------------------------
 byte I2CMUX::getMajorRelease()
 {
-  while ((millis() - _statusTimer) < _READDELAY) {
+  while ((int32_t)(millis() - _statusTimer) < _READDELAY) {
     delay(1);
   }
   _statusTimer = millis();
@@ -54,7 +54,7 @@ byte I2CMUX::getMajorRelease()
 //-------------------------------------------------------------------------------------
 byte I2CMUX::getMinorRelease()
 {
-  while ((millis() - _statusTimer) < _READDELAY) {
+  while ((int32_t)(millis() - _statusTimer) < _READDELAY) {
     delay(1);
   }
   _statusTimer = millis();
@@ -64,7 +64,7 @@ byte I2CMUX::getMinorRelease()
 //-------------------------------------------------------------------------------------
 byte I2CMUX::getWhoAmI()
 {
-  while ((millis() - _statusTimer) < _READDELAY) {
+  while ((int32_t)(millis() - _statusTimer) < _READDELAY) {
     delay(1);
   }
   _statusTimer = millis();
@@ -74,7 +74,7 @@ byte I2CMUX::getWhoAmI()
 //-------------------------------------------------------------------------------------
 byte I2CMUX::getNumRelays()
 {
-  while ((millis() - _statusTimer) < _READDELAY) {
+  while ((int32_t)(millis() - _statusTimer) < _READDELAY) {
     delay(1);
   }
   _statusTimer = millis();
@@ -84,7 +84,7 @@ byte I2CMUX::getNumRelays()
 //-------------------------------------------------------------------------------------
 byte I2CMUX::getStatus()
 {
-  while ((millis() - _statusTimer) < _READDELAY) {
+  while ((int32_t)(millis() - _statusTimer) < _READDELAY) {
     delay(1);
   }
   _statusTimer = millis();
@@ -166,7 +166,7 @@ bool I2CMUX::setNumRelays(uint8_t numRelays)
 //-------------------------------------------------------------------------------------
 uint8_t I2CMUX::readReg1Byte(uint8_t addr)
 {  
-  while ((millis() - _statusTimer) < _READDELAY) {
+  while ((int32_t)(millis() - _statusTimer) < _READDELAY) {
     delay(1);
   }
   _statusTimer = millis();
@@ -178,7 +178,7 @@ uint8_t I2CMUX::readReg1Byte(uint8_t addr)
   }
 
   _I2Cbus->requestFrom((uint8_t)_I2Caddress, (uint8_t) 1);
-  delay(5);
+  delay(2);
   if (_I2Cbus->available()) {
     return (_I2Cbus->read());
   }
@@ -190,7 +190,7 @@ uint8_t I2CMUX::readReg1Byte(uint8_t addr)
 //-------------------------------------------------------------------------------------
 int16_t I2CMUX::readReg2Byte(uint8_t addr)
 {
-  while ((millis() - _statusTimer) < _READDELAY) {
+  while ((int32_t)(millis() - _statusTimer) < _READDELAY) {
     delay(1);
   }
   _statusTimer = millis();
@@ -202,7 +202,7 @@ int16_t I2CMUX::readReg2Byte(uint8_t addr)
   }
 
   _I2Cbus->requestFrom((uint8_t)_I2Caddress, (uint8_t) 2);
-  delay(5);
+  delay(2);
   if (_I2Cbus->available()) {
     uint8_t LSB = _I2Cbus->read();
     uint8_t MSB = _I2Cbus->read();
@@ -216,7 +216,7 @@ int16_t I2CMUX::readReg2Byte(uint8_t addr)
 //-------------------------------------------------------------------------------------
 int32_t I2CMUX::readReg4Byte(uint8_t addr)
 {
-  while ((millis() - _statusTimer) < _READDELAY) {
+  while ((int32_t)(millis() - _statusTimer) < _READDELAY) {
     delay(1);
   }
   _statusTimer = millis();
@@ -228,7 +228,7 @@ int32_t I2CMUX::readReg4Byte(uint8_t addr)
   }
 
   _I2Cbus->requestFrom((uint8_t)_I2Caddress, (uint8_t) 4);
-  delay(5);
+  delay(2);
   if (_I2Cbus->available()) {
     uint8_t LSB   = _I2Cbus->read();
     uint8_t mLSB  = _I2Cbus->read();
@@ -249,7 +249,7 @@ int32_t I2CMUX::readReg4Byte(uint8_t addr)
 //-------------------------------------------------------------------------------------
 bool I2CMUX::writeReg1Byte(uint8_t addr, uint8_t val)
 {
-  while ((millis() - _statusTimer) < _WRITEDELAY) {
+  while ((int32_t)(millis() - _statusTimer) < _WRITEDELAY) {
     delay(1);
   }
   _statusTimer = millis();
@@ -274,7 +274,7 @@ bool I2CMUX::writeReg1Byte(uint8_t addr, uint8_t val)
 //-------------------------------------------------------------------------------------
 bool I2CMUX::writeReg2Byte(uint8_t addr, int16_t val)
 {
-  while ((millis() - _statusTimer) < _WRITEDELAY) {
+  while ((int32_t)(millis() - _statusTimer) < _WRITEDELAY) {
     delay(1);
   }
   _statusTimer = millis();
@@ -295,7 +295,7 @@ bool I2CMUX::writeReg2Byte(uint8_t addr, int16_t val)
 //-------------------------------------------------------------------------------------
 bool I2CMUX::writeReg3Byte(uint8_t addr, int32_t val)
 {
-  while ((millis() - _statusTimer) < _WRITEDELAY) {
+  while ((int32_t)(millis() - _statusTimer) < _WRITEDELAY) {
     delay(1);
   }
   _statusTimer = millis();
@@ -317,7 +317,7 @@ bool I2CMUX::writeReg3Byte(uint8_t addr, int32_t val)
 //-------------------------------------------------------------------------------------
 bool I2CMUX::writeReg4Byte(uint8_t addr, int32_t val)
 {
-  while ((millis() - _statusTimer) < _WRITEDELAY) {
+  while ((int32_t)(millis() - _statusTimer) < _WRITEDELAY) {
     delay(1);
   }
   _statusTimer = millis();
@@ -339,8 +339,8 @@ bool I2CMUX::writeReg4Byte(uint8_t addr, int32_t val)
 //-------------------------------------------------------------------------------------
 bool I2CMUX::writeCommand2Bytes(byte CMD, byte GPIO_PIN)
 {
-  while ((millis() - _statusTimer) < _WRITEDELAY) {
-    delay(5);
+  while ((int32_t)(millis() - _statusTimer) < _WRITEDELAY) {
+    delay(1);
   }
   _statusTimer = millis();
 
@@ -360,8 +360,8 @@ bool I2CMUX::writeCommand2Bytes(byte CMD, byte GPIO_PIN)
 //-------------------------------------------------------------------------------------
 bool I2CMUX::writeCommand3Bytes(byte CMD, byte GPIO_PIN, byte HIGH_LOW)
 {
-  while ((millis() - _statusTimer) < _WRITEDELAY) {
-    delay(5);
+  while ((int32_t)(millis() - _statusTimer) < _WRITEDELAY) {
+    delay(1);
   }
   _statusTimer = millis();
 

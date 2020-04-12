@@ -14,19 +14,15 @@ static void readConfig()
 {
   registerLayout registersSaved;
 
-  Dprintln("readConfig()..");
-
   eeprom_read_block(&registersSaved, 0, sizeof(registersSaved));
   //--- the registerStack will not change in the same Major Version --
   if (   registersSaved.majorRelease == _MAJOR_VERSION 
       && registerStack.whoAmI > 0 && registerStack.whoAmI <= 127) {
-    Dprintln("Found valid registerStack!");
     registerStack = registersSaved;
 
   //--- the Major version has changed and there is no way of -----
   //--- knowing the registerStack has not changed, so rebuild ----
   } else {  
-    Dprintln("Found no registerStack! Create one");
     registerStack.majorRelease    = _MAJOR_VERSION;
     registerStack.minorRelease    = _MINOR_VERSION;
     registerStack.whoAmI          = _I2C_DEFAULT_ADDRESS;
@@ -34,8 +30,6 @@ static void readConfig()
 
     writeConfig();
   }
-
-  DprintRegisters("readConfig:");
   
 } // readConfig()
 
@@ -43,11 +37,8 @@ static void readConfig()
 //--------------------------------------------------------------------------
 static void writeConfig()
 {
-  Dprintln("writeConfig()..");
   //eeprom_update_block(&registerStack, 0, sizeof(registerStack));
   eeprom_write_block(&registerStack, 0, sizeof(registerStack));
-
-  DprintRegisters("writeConfig:");
   
 } // writeConfig()
 

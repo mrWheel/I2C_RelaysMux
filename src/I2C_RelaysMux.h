@@ -38,8 +38,8 @@ enum encoderRegisters {
   I2CMUX_COMMAND         = 0xF0   // -> this is NOT a "real" register!!
 };
 
-#define _WRITEDELAY 20
-#define _READDELAY  20
+#define _WRITEDELAY 10
+#define _READDELAY  10
 
 class I2CMUX
 {
