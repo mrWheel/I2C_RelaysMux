@@ -3,7 +3,7 @@
 **
 **  Program     : I2C_UNO_RelaysMux_Test
 */
-#define _FW_VERSION  "v1.0 (12-04-2020)"
+#define _FW_VERSION  "v1.0 (15-04-2020)"
 /*
 **  Description : Test I2C Relay Multiplexer
 **
@@ -43,7 +43,7 @@
 //#define _SCL                  5
 
 #define LOOP_INTERVAL        1000
-#define INACTIVE_TIME      120000
+#define INACTIVE_TIME      300000
 
 //#define Debugf      Serial.printf
 
@@ -245,14 +245,14 @@ void help()
   Serial.println(F("    n=0;         -> sets relay n to 'open'"));
   Serial.println(F("    all=1;       -> sets all relay's to 'closed'"));
   Serial.println(F("    all=0;       -> sets all relay's to 'open'"));
-  Serial.println(F("    adres=48;    -> sets I2C address to 0x48"));
-  Serial.println(F("    adres=24;    -> sets I2C address to 0x24"));
-  Serial.println(F("    board=8;     -> set's board to 8 relay's"));
-  Serial.println(F("    board=16;    -> set's board to 16 relay's"));
+  Serial.println(F("    address48;   -> sets I2C address to 0x48"));
+  Serial.println(F("    address24;   -> sets I2C address to 0x24"));
+  Serial.println(F("    board8;      -> set's board to 8 relay's"));
+  Serial.println(F("    board16;     -> set's board to 16 relay's"));
   Serial.println(F("    status;      -> I2C mux status"));
   Serial.println(F("    pinstate;    -> List's state of all relay's"));
   Serial.println(F("    looptest;    -> looping"));
-  Serial.println(F("    muxtest;  -> test on Relay Board"));
+  Serial.println(F("    muxtest;     -> test on Relay Board"));
   Serial.println(F("    whoami;      -> shows I2C address Slave MUX"));
   Serial.println(F("    writeconfig; -> write config to eeprom"));
   Serial.println(F("    reboot;      -> reboot I2C Mux"));
@@ -277,10 +277,6 @@ void executeCommand(String command)
   inactiveTimer = millis();
   loopTestOn    = false;
 
-  if (command == "adres=48") {actI2Caddress = 0x48; relay.setI2Caddress(actI2Caddress); }
-  if (command == "adres=24") {actI2Caddress = 0x24; relay.setI2Caddress(actI2Caddress); }
-  if (command == "board=8")  {numRelays = 8;  relay.setNumRelays(numRelays); command = "all=0"; }
-  if (command == "board=16") {numRelays = 16; relay.setNumRelays(numRelays); command = "all=0"; }
   if (command == "0=1")       relay.digitalWrite(0,  HIGH); 
   if (command == "0=0")       relay.digitalWrite(0,  LOW); 
   if (command == "1=1")       relay.digitalWrite(1,  HIGH); 
@@ -319,13 +315,17 @@ void executeCommand(String command)
   {
     for (int i=1; i<=numRelays; i++) relay.digitalWrite(i, HIGH); 
   }
-  if (command == "all=0") setAllToZero();
+  if (command == "all=0")       setAllToZero();
   if (command == "status")      Mux_Status();
+  if (command == "address48")   {actI2Caddress = 0x48; relay.setI2Caddress(actI2Caddress); }
+  if (command == "address24")   {actI2Caddress = 0x24; relay.setI2Caddress(actI2Caddress); }
+  if (command == "board8")      {numRelays = 8;  relay.setNumRelays(numRelays); command = "all=0"; }
+  if (command == "board16")     {numRelays = 16; relay.setNumRelays(numRelays); command = "all=0"; }
   if (command == "pinstate")    displayPinState();
   if (command == "looptest")    loopTestOn = true;
-  if (command == "muxtest")  relay.writeCommand(1<<CMD_muxtest);
+  if (command == "muxtest")     relay.writeCommand(1<<CMD_muxtest);
   if (command == "whoami")      { Serial.print("I am 0x"); 
-                                  Serial.println(relay.getWhoAmI(), HEX);
+                                    Serial.println(relay.getWhoAmI(), HEX);
                                 }
   if (command == "readconfig")  relay.writeCommand(1<<CMD_READCONF);
   if (command == "writeconfig") relay.writeCommand(1<<CMD_WRITECONF);

@@ -3,7 +3,7 @@
 **
 **  Program     : I2C_ESP8266_RelaysMux_Test
 */
-#define _FW_VERSION  "v1.0 (12-04-2020)"
+#define _FW_VERSION  "v1.0 (15-04-2020)"
 /*
 **  Description : Test I2C Relay Multiplexer
 **
@@ -46,7 +46,7 @@
 //#define _SCL                  5
 
 #define LOOP_INTERVAL        1000
-#define INACTIVE_TIME      120000
+#define INACTIVE_TIME      300000
 
 #include <I2C_RelaysMux.h>
 
@@ -58,8 +58,8 @@
 #include <WiFiUdp.h>            // part of ESP8266 Core https://github.com/esp8266/Arduino
 
 #ifndef STASSID
-#define STASSID "AandeWiFi"   //"your-ssid"
-#define STAPSK  "3741TS12tl"  //"your-password"
+#define STASSID "your-ssid"
+#define STAPSK  "your-password"
 #endif
 
 const char* ssid     = STASSID;
@@ -292,14 +292,14 @@ void help(Stream *sOut)
   sOut->println(F("    n=0;         -> sets relay n to 'open'"));
   sOut->println(F("    all=1;       -> sets all relay's to 'closed'"));
   sOut->println(F("    all=0;       -> sets all relay's to 'open'"));
-  sOut->println(F("    adres=48;    -> sets I2C address to 0x48"));
-  sOut->println(F("    adres=24;    -> sets I2C address to 0x24"));
-  sOut->println(F("    board=8;     -> set's board to 8 relay's"));
-  sOut->println(F("    board=16;    -> set's board to 16 relay's"));
+  sOut->println(F("    address48;   -> sets I2C address to 0x48"));
+  sOut->println(F("    address24;   -> sets I2C address to 0x24"));
+  sOut->println(F("    board8;      -> set's board to 8 relay's"));
+  sOut->println(F("    board16;     -> set's board to 16 relay's"));
   sOut->println(F("    status;      -> I2C mux status"));
   sOut->println(F("    pinstate;    -> List's state of all relay's"));
-  sOut->println(F("    looptest;    -> looping"));
-  sOut->println(F("    muxtest;  -> longer test"));
+  sOut->println(F("    looptest;    -> Chasing Relays test"));
+  sOut->println(F("    muxtest;     -> On board test"));
   sOut->println(F("    whoami;      -> shows I2C address Slave MUX"));
   sOut->println(F("    writeconfig; -> write config to eeprom"));
   sOut->println(F("    reboot;      -> reboot I2C Mux"));
@@ -324,10 +324,6 @@ void executeCommand(String command)
   inactiveTimer = millis();
   loopTestOn    = false;
 
-  if (command == "adres=48") {actI2Caddress = 0x48; relay.setI2Caddress(actI2Caddress); }
-  if (command == "adres=24") {actI2Caddress = 0x24; relay.setI2Caddress(actI2Caddress); }
-  if (command == "board=8")  {numRelays = 8;  relay.setNumRelays(numRelays); command = "all=0"; }
-  if (command == "board=16") {numRelays = 16; relay.setNumRelays(numRelays); command = "all=0"; }
   if (command == "0=1")       relay.digitalWrite(0,  HIGH); 
   if (command == "0=0")       relay.digitalWrite(0,  LOW); 
   if (command == "1=1")       relay.digitalWrite(1,  HIGH); 
@@ -366,7 +362,11 @@ void executeCommand(String command)
   {
     for (int i=1; i<=numRelays; i++) relay.digitalWrite(i, HIGH); 
   }
-  if (command == "all=0") setAllToZero();
+  if (command == "all=0")       setAllToZero();
+  if (command == "address48")   {actI2Caddress = 0x48; relay.setI2Caddress(actI2Caddress); }
+  if (command == "address24")   {actI2Caddress = 0x24; relay.setI2Caddress(actI2Caddress); }
+  if (command == "board8")      {numRelays = 8;  relay.setNumRelays(numRelays); command = "all=0"; }
+  if (command == "board16")     {numRelays = 16; relay.setNumRelays(numRelays); command = "all=0"; }
   if (command == "status")      { if (commandBy == 1) Mux_Status(&Serial);
                                   else          Mux_Status(&TelnetStream);
                                 }
@@ -376,11 +376,11 @@ void executeCommand(String command)
   if (command == "looptest")    loopTestOn = true;
   if (command == "muxtest")     relay.writeCommand(1<<CMD_TESTRELAYS);
   if (command == "whoami")      { if (commandBy == 1) {
-                                    Serial.print(">>> I am ");
+                                    Serial.print(">>> I am 0x");
                                     Serial.println(relay.getWhoAmI(), HEX);
                                   }
                                   else {
-                                    TelnetStream.print(">>> I am ");
+                                    TelnetStream.print(">>> I am 0x");
                                     TelnetStream.println(relay.getWhoAmI(), HEX);
                                   }
                                 }
