@@ -323,7 +323,7 @@ void executeCommand(String command)
   if (command == "board16")     {numRelays = 16; relay.setNumRelays(numRelays); command = "all=0"; }
   if (command == "pinstate")    displayPinState();
   if (command == "looptest")    loopTestOn = true;
-  if (command == "muxtest")     relay.writeCommand(1<<CMD_muxtest);
+  if (command == "muxtest")     relay.writeCommand(1<<CMD_TESTRELAYS);
   if (command == "whoami")      { Serial.print("I am 0x"); 
                                     Serial.println(relay.getWhoAmI(), HEX);
                                 }
